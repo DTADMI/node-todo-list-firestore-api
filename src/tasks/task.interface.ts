@@ -6,7 +6,7 @@ export interface BaseTask {
     subtasks?: Array<string>,
     superTask?: string,
     lastModificationDate?: string,
-    user: string
+    userId: string
 }
 
 export interface Task extends BaseTask {

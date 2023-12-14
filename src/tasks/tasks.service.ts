@@ -58,14 +58,14 @@ export const findAll = async (): Promise<Task[]> => {
     })
 };
 
-export const findAllFromUser = async (user: string): Promise<Task[]> => {
-    console.log(`findAllFromUser with user: ${user}`);
+export const findAllFromUser = async (userId: string): Promise<Task[]> => {
+    console.log(`findAllFromUser with userId: ${userId}`);
     const cacheKey = CACHE_KEYS.USER_TASKS;
     if(cache.has(cacheKey)){
         return Promise.resolve(cache.get<Task[]>(cacheKey) as Task[]);
     }
 
-    return TaskCollection.where('user', '==', user).get().then((snapshot)=>{
+    return TaskCollection.where('userId', '==', userId).get().then((snapshot)=>{
         const tasks: Task[] = snapshot.docs.map((doc) => {
             return doc.data() as Task;
         });

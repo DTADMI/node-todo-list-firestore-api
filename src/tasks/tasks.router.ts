@@ -162,20 +162,20 @@ tasksRouter.post("/task", (req: Request, res: Response) => {
 // POST tasks/
 
 tasksRouter.post("/", (req: Request, res: Response) => {
-    const { user } = req.body;
+    const { userId } = req.body;
     const page=req.query?.page ?? "";
     const limit=req.query?.limit ?? "";
     const showMedata= req.query?.showMedata ? ((req.query?.showMedata + "").toLowerCase?.() === 'true') : true;
     let results: TaskResult;
 
-    if(!user) {
+    if(!userId) {
         console.log("User missing")
         res.sendStatus(400);
         return;
     }
-    console.log(`Getting all owned tasks from ${user}`);
+    console.log(`Getting all owned tasks from ${userId}`);
 
-    TaskService.findAllFromUser(user)
+    TaskService.findAllFromUser(userId)
         .then((tasks: Task[]) => {
             if(!tasks?.length){
                 console.log("no result");
