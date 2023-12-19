@@ -12,7 +12,8 @@
     "prestart": "npm run build",
     "start": "node build/index.js -p $PORT",
     "dev": "ts-node-dev --respawn --pretty --transpile-only src/index.ts",
-    "deploy": "firebase deploy --only functions",
+    "serve": "firebase serve --only functions,hosting",
+    "deploy": "firebase deploy --only functions,hosting",
     "logs": "firebase functions:log"
   },
   "engines": {

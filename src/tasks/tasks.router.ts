@@ -111,6 +111,7 @@ tasksRouter.get(
                 console.log("no result");
             }
             results = paginateResults(page.toString(), limit.toString(), showMedata, tasks);
+            res.set('Cache-Control', 'public, max-age=120, s-maxage=300');
             res.status(200).send(results);
         }).catch((error) => {
             const errorMessage = "Error getting document ";
@@ -141,6 +142,7 @@ tasksRouter.get(
                 throw new HttpException(NOT_FOUND_MESSAGE, null, 404);
             }
             console.log("Task Document data:", task);
+            res.set('Cache-Control', 'public, max-age=60, s-maxage=120');
             res.status(200).send(cleanTaskDto(task));
         }).catch((error) => {
             errorMessage = "Error getting document ";
@@ -172,6 +174,7 @@ tasksRouter.get(
                 throw new HttpException(NOT_FOUND_MESSAGE, null, 404);
             }
             console.log("Task Document data:", JSON.stringify(task));
+            res.set('Cache-Control', 'public, max-age=60, s-maxage=120');
             res.status(200).send(cleanTaskDto(task));
         }).catch((error) => {
             errorMessage = "Error getting document ";
@@ -230,7 +233,7 @@ tasksRouter.post(
                     console.log("no result");
                 }
                 results = paginateResults(page.toString(), limit.toString(), showMedata, tasks);
-
+                res.set('Cache-Control', 'public, max-age=120, s-maxage=300');
                 res.status(200).send(results);
             })
             .catch((error) => {
@@ -261,6 +264,7 @@ tasksRouter.put(
                     throw new HttpException(NOT_FOUND_MESSAGE, null, 404);
                 }
                 console.log("Task Document successfully updated!");
+                res.set('Cache-Control', 'public, max-age=60, s-maxage=120');
                 res.status(200).json(cleanTaskDto(task));
             })
             .catch((error) => {
@@ -288,6 +292,7 @@ tasksRouter.put(
                     throw new HttpException(NOT_FOUND_MESSAGE, null, 404);
                 }
                 console.log("Task Document successfully updated!");
+                res.set('Cache-Control', 'public, max-age=60, s-maxage=120');
                 res.status(200).json(cleanTaskDto(task));
             })
             .catch((error) => {
