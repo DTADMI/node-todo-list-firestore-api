@@ -111,7 +111,6 @@ tasksRouter.get(
                 console.log("no result");
             }
             results = paginateResults(page.toString(), limit.toString(), showMedata, tasks);
-
             res.status(200).send(results);
         }).catch((error) => {
             const errorMessage = "Error getting document ";
@@ -129,7 +128,7 @@ tasksRouter.get(
 
         const { id } = req.params;
         console.log(`In Get by id with id : ${id}`);
-        let errorMessage;
+        let errorMessage: string;
         if (!id) {
             errorMessage = `id parameter not provided`;
             console.log(errorMessage);
@@ -159,7 +158,7 @@ tasksRouter.get(
 
         let { name } = req.params;
         console.log(`In Get by name with name : ${name}`);
-        let errorMessage;
+        let errorMessage: string;
         if (!name) {
             errorMessage = `name parameter not provided`;
             console.log(errorMessage);
@@ -217,7 +216,7 @@ tasksRouter.post(
         const showMedata= req.query?.showMedata ? ((req.query?.showMedata + "").toLowerCase?.() === 'true') : true;
         let results: TaskResult;
 
-        let errorMessage;
+        let errorMessage: string;
         if(!userId) {
             errorMessage = "User parameter missing";
             console.log(errorMessage);
@@ -249,7 +248,7 @@ tasksRouter.put(
     tryCatch((req: Request, res: Response) => {
         const taskUpdate: Task = req.body;
         console.log(`In update! data sent : ${JSON.stringify(taskUpdate)}`);
-        let errorMessage;
+        let errorMessage: string;
         if(!taskUpdate?.name || !taskUpdate?.id) {
             errorMessage = "Missing data in request body!";
             console.log(errorMessage);
@@ -308,7 +307,7 @@ tasksRouter.delete("/:id", (req: Request, res: Response) => {
      **/
     const { id } = req.params;
     console.log(`In delete with id : ${id}`);
-    let errorMessage;
+    let errorMessage: string;
     if (!id) {
         errorMessage = `id parameter not provided`;
         console.log(errorMessage);
@@ -359,7 +358,7 @@ tasksRouter.delete(
     tryCatch((req: Request, res: Response) => {
         let name = req.query?.name ?? "";
         console.log(`In delete by name with name : ${name}`);
-        let errorMessage;
+        let errorMessage: string;
         if (!name) {
             errorMessage = "Name not provided!";
             console.log(errorMessage);
