@@ -1,11 +1,17 @@
 // src/maps/maps.service.ts
+/**
+ * TODO:
+ * Logger middleware
+ * Error handler middleware
+ * */
+
 
 /**
  * Data Model Interfaces
  */
 
-import {BaseTask, Task} from "./task.interface";
-import {db} from "../common/firebase";
+import {BaseTask, Task} from "./task.interface.js";
+import {db} from "../common/firebase.js";
 import NodeCache from "node-cache";
 
 /**
@@ -120,7 +126,7 @@ export const findByName = async (name: string): Promise<Task | null> => {
     return TaskCollection.where('name', '==', name).get().then((snapshot)=>{
         const task: Task | null = snapshot.docs.map((doc) => {
             return doc.data() as Task;
-        }).find((task: Task) => task.name === name) ?? null;
+        })[0] ?? null;
         if(task){
             cache.set<Task>(cacheKey, task);
         }
@@ -145,7 +151,8 @@ export const findInCacheByName = async (name: string): Promise<Task | null> => {
 
 export const create = (newBaseTask: BaseTask): Promise<Task> => {
     console.log(`Creating task ${JSON.stringify(newBaseTask)}`);
-    const newTask = { ...newBaseTask, creationDate: new Date().toUTCString()}
+    const now = new Date().toUTCString();
+    const newTask = { ...newBaseTask, creationDate: now, lastModificationDate: now}
     return TaskCollection.add(newTask)
         .then((docRef) => {
             console.log("Task Document written with ID: ", docRef.id);

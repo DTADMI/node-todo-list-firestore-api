@@ -1,5 +1,6 @@
 export interface BaseTask {
     name: string,
+    description?: string,
     isDone: boolean,
     creationDate: string,
     dueDate?: string,

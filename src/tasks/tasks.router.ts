@@ -3,15 +3,47 @@
  */
 
 import express, { Request, Response } from "express";
-import * as TaskService from "./tasks.service";
-import {BaseTask, Task} from "./task.interface";
-import {TaskResult} from "./tasks.interface";
+import * as TaskService from "./tasks.service.js";
+import {BaseTask, Task} from "./task.interface.js";
+import {TaskResult} from "./tasks.interface.js";
+import {tryCatch} from "../utils/tryCatch.js";
+import HttpException from "../common/http-exception.js";
 
 /**
  * Router Definition
  */
 
 export const tasksRouter = express.Router();
+
+const NOT_FOUND_MESSAGE = "😅 Resource not found! 🏳️";
+
+const cleanTaskDto = (task: Task) : Task => {
+    const result: Task = {} as Task;
+    
+    result.id = task.id;
+    result.name = task.name;
+    result.isDone = task.isDone;
+    result.userId = task.userId;
+    result.uri = "/api/todolist/tasks/" + task.id;
+    result.creationDate = task.creationDate;
+    if(task.description) {
+        result.description = task.description;
+    }
+    if(task.dueDate) {
+        result.dueDate = task.dueDate;
+    }
+    if(task.subtasks) {
+        result.subtasks = [...task.subtasks];
+    }
+    if(task.superTask) {
+        result.superTask = task.superTask;
+    }
+    if(task.lastModificationDate) {
+        result.lastModificationDate = task.lastModificationDate;
+    }
+
+    return result;
+}
 
 /**
  * Paginating function
@@ -52,10 +84,10 @@ const paginateResults = (page: string, limit: string, showMedata: boolean, tasks
         }
         tasks = tasks.slice(startIndex, endIndex);
     }
-    tasks.forEach(task => {
+    tasks = tasks.map(task => {
         console.log(`creationDate: ${JSON.stringify(task.creationDate)}`)
-        task.uri = "/api/todolist/tasks/" + task.id;
-    })
+        return cleanTaskDto(task);
+    });
     results.data = tasks;
     return results;
 }
@@ -66,179 +98,206 @@ const paginateResults = (page: string, limit: string, showMedata: boolean, tasks
 
 
 // GET tasks/
-tasksRouter.get("/", (req: Request, res: Response) => {
-    console.log("starting get all");
-    const page= req.query?.page ?? "";
-    const limit= req.query?.limit ?? "";
-    const showMedata= req.query?.showMedata ? ((req.query?.showMedata + "").toLowerCase?.() === 'true') : true;
-    let results: TaskResult;
-    TaskService.findAll().then((tasks: Task[])=> {
-        if(!tasks?.length){
-            console.log("no result");
-        }
-        results = paginateResults(page.toString(), limit.toString(), showMedata, tasks);
-
-        res.status(200).send(results);
-    }).catch((error) => {
-        console.error("Error getting documents: ", error);
-        res.status(500).json(`Error getting documents: ${error}`);
-    });
-});
-
-// GET tasks/:id
-
-tasksRouter.get("/:id", (req: Request, res: Response) => {
-
-    const { id } = req.params;
-    console.log(`In Get by id with id : ${id}`)
-    if (!id) {
-        console.log(`id ${id} not given`)
-        res.sendStatus(400)
-        return;
-    }
-
-    TaskService.findInCacheById(id.toString()).then((task: Task | null) => {
-        if (!task) {
-            console.log("No such document!");
-            res.sendStatus(404);
-            return;
-        }
-        console.log("Task Document data:", task);
-        res.status(200).send(task);
-    }).catch((error) => {
-        console.error("Error getting document: ", error);
-        res.status(500).send(`Error getting document: ${error}`);
-    });
-});
-
-// GET tasks/name/?name
-
-tasksRouter.get("/name/:name", (req: Request, res: Response) => {
-
-    let { name } = req.params;
-    console.log(`In Get by name with name : ${name}`)
-    if (!name) {
-        console.log(`id ${name} not provided`)
-        res.sendStatus(400)
-        return;
-    }
-
-    name = name.toString();
-    TaskService.findInCacheByName(name).then((task) => {
-        if(!task) {
-            console.log("No such document!!!");
-            res.sendStatus(404);
-            return;
-        }
-        console.log("Task Document data:", JSON.stringify(task));
-        res.status(200).send(task);
-    }).catch((error) => {
-        console.error("Error getting document: ", error);
-        res.status(500).send(`Error getting document: ${error}`);
-    });
-});
-
-// POST tasks/task
-
-tasksRouter.post("/task", (req: Request, res: Response) => {
-    const task: BaseTask = req.body;
-
-    if(!task?.name) {
-        res.sendStatus(400);
-        return;
-    }
-    console.log(`Creating task ${task}`);
-    TaskService.create(task)
-        .then((newTask) => {
-            console.log("Task Document written with ID: ", newTask.id);
-            res.status(201).json(newTask);
-        })
-        .catch((error) => {
-            console.error("Error adding document: ", error);
-            res.status(500).send(`Error adding document: ${error}`);
-        });
-});
-
-// POST tasks/
-
-tasksRouter.post("/", (req: Request, res: Response) => {
-    const { userId } = req.body;
-    const page=req.query?.page ?? "";
-    const limit=req.query?.limit ?? "";
-    const showMedata= req.query?.showMedata ? ((req.query?.showMedata + "").toLowerCase?.() === 'true') : true;
-    let results: TaskResult;
-
-    if(!userId) {
-        console.log("User missing")
-        res.sendStatus(400);
-        return;
-    }
-    console.log(`Getting all owned tasks from ${userId}`);
-
-    TaskService.findAllFromUser(userId)
-        .then((tasks: Task[]) => {
+tasksRouter.get(
+    "/",
+    tryCatch((req: Request, res: Response) => {
+        console.log("starting get all");
+        const page= req.query?.page ?? "";
+        const limit= req.query?.limit ?? "";
+        const showMedata= req.query?.showMedata ? ((req.query?.showMedata + "").toLowerCase?.() === 'true') : true;
+        let results: TaskResult;
+        TaskService.findAll().then((tasks: Task[])=> {
             if(!tasks?.length){
                 console.log("no result");
             }
             results = paginateResults(page.toString(), limit.toString(), showMedata, tasks);
 
             res.status(200).send(results);
-        })
-        .catch((error) => {
-            console.error("Error while getting all owned document: ", error);
-            res.status(500).send(`Error while getting all user documents: ${error}`);
+        }).catch((error) => {
+            const errorMessage = "Error getting document ";
+            console.error(errorMessage, error);
+            throw new HttpException(errorMessage, JSON.stringify(error));
         });
-});
+    })
+);
+
+// GET tasks/:id
+
+tasksRouter.get(
+    "/:id",
+    tryCatch((req: Request, res: Response) => {
+
+        const { id } = req.params;
+        console.log(`In Get by id with id : ${id}`);
+        let errorMessage;
+        if (!id) {
+            errorMessage = `id parameter not provided`;
+            console.log(errorMessage);
+            throw new HttpException(errorMessage, null, 400);
+        }
+
+        TaskService.findInCacheById(id.toString()).then((task: Task | null) => {
+            if (!task) {
+                console.log(NOT_FOUND_MESSAGE);
+                throw new HttpException(NOT_FOUND_MESSAGE, null, 404);
+            }
+            console.log("Task Document data:", task);
+            res.status(200).send(cleanTaskDto(task));
+        }).catch((error) => {
+            errorMessage = "Error getting document ";
+            console.error(errorMessage, error);
+            throw new HttpException(errorMessage, JSON.stringify(error));
+        });
+    })
+);
+
+// GET tasks/name/?name
+
+tasksRouter.get(
+    "/name/:name",
+    tryCatch((req: Request, res: Response) => {
+
+        let { name } = req.params;
+        console.log(`In Get by name with name : ${name}`);
+        let errorMessage;
+        if (!name) {
+            errorMessage = `name parameter not provided`;
+            console.log(errorMessage);
+            throw new HttpException(errorMessage, null, 400);
+        }
+
+        name = name.toString();
+        TaskService.findInCacheByName(name).then((task: Task | null) => {
+            if(!task) {
+                console.log(NOT_FOUND_MESSAGE);
+                throw new HttpException(NOT_FOUND_MESSAGE, null, 404);
+            }
+            console.log("Task Document data:", JSON.stringify(task));
+            res.status(200).send(cleanTaskDto(task));
+        }).catch((error) => {
+            errorMessage = "Error getting document ";
+            console.error(errorMessage, error);
+            throw new HttpException(errorMessage, JSON.stringify(error));
+        });
+    })
+);
+
+// POST tasks/task
+
+tasksRouter.post(
+    "/task",
+    tryCatch((req: Request, res: Response) => {
+        const task: BaseTask = req.body;
+
+        if(!task?.name) {
+            throw new HttpException("task parameter must contain a name", null, 400);
+        }
+        console.log(`Creating task ${task}`);
+        TaskService.create(task)
+            .then((newTask) => {
+                console.log("Task Document written with ID: ", newTask.id);
+                res.status(201).json(cleanTaskDto(newTask));
+            })
+            .catch((error) => {
+                const errorMessage = "Error adding document ";
+                console.error(errorMessage, error);
+                throw new HttpException(errorMessage, JSON.stringify(error));
+            });
+    })
+);
+
+// POST tasks/
+
+tasksRouter.post(
+    "/",
+    tryCatch((req: Request, res: Response) => {
+        const { userId } = req.body;
+        const page=req.query?.page ?? "";
+        const limit=req.query?.limit ?? "";
+        const showMedata= req.query?.showMedata ? ((req.query?.showMedata + "").toLowerCase?.() === 'true') : true;
+        let results: TaskResult;
+
+        let errorMessage;
+        if(!userId) {
+            errorMessage = "User parameter missing";
+            console.log(errorMessage);
+            throw new HttpException(errorMessage,null, 400);
+        }
+        console.log(`Getting all owned tasks from ${userId}`);
+
+        TaskService.findAllFromUser(userId)
+            .then((tasks: Task[]) => {
+                if(!tasks?.length){
+                    console.log("no result");
+                }
+                results = paginateResults(page.toString(), limit.toString(), showMedata, tasks);
+
+                res.status(200).send(results);
+            })
+            .catch((error) => {
+                errorMessage = "Error while getting all owned document "
+                console.error(errorMessage, error);
+                throw new HttpException(errorMessage, JSON.stringify(error));
+            });
+    })
+);
 
 // PUT tasks/
 
-tasksRouter.put("/", (req: Request, res: Response) => {
-    const taskUpdate: Task = req.body;
-    console.log(`In update! data sent : ${JSON.stringify(taskUpdate)}`)
-    if(!taskUpdate?.name || !taskUpdate?.id) {
-        console.log("Missing data in request body!")
-        res.sendStatus(400);
-        return;
-    }
-    TaskService.update(taskUpdate)
-        .then((task) => {
-            if(!task) {
-                console.log("No such document!!");
-                res.sendStatus(404);
-                return;
-            }
-            console.log("Task Document successfully updated!");
-            res.status(200).json(task);
-        })
-        .catch((error) => {
-            console.error("Error writing document: ", error);
-            res.status(500).send(`Error writing document: ${error}`);
-        });
-});
+tasksRouter.put(
+    "/",
+    tryCatch((req: Request, res: Response) => {
+        const taskUpdate: Task = req.body;
+        console.log(`In update! data sent : ${JSON.stringify(taskUpdate)}`);
+        let errorMessage;
+        if(!taskUpdate?.name || !taskUpdate?.id) {
+            errorMessage = "Missing data in request body!";
+            console.log(errorMessage);
+            throw new HttpException(errorMessage, null, 400);
+        }
+        TaskService.update(taskUpdate)
+            .then((task) => {
+                if(!task) {
+                    console.log(NOT_FOUND_MESSAGE);
+                    throw new HttpException(NOT_FOUND_MESSAGE, null, 404);
+                }
+                console.log("Task Document successfully updated!");
+                res.status(200).json(cleanTaskDto(task));
+            })
+            .catch((error) => {
+                errorMessage = "Error writing document ";
+                console.error(errorMessage, error);
+                throw new HttpException(errorMessage, JSON.stringify(error));
+            });
+    })
+);
 
 // PUT tasks/subtasks
 
-tasksRouter.put("/subtasks", (req: Request, res: Response) => {
-    const taskUpdate: Task = req.body;
-    if(!taskUpdate?.name || !taskUpdate?.id || !taskUpdate?.subtasks) {
-        res.sendStatus(400);
-        return;
-    }
-    TaskService.updateSubtasks(taskUpdate)
-        .then((task) => {
-            if(!task) {
-                console.log("No such document!!!!");
-                res.sendStatus(404);
-                return;
-            }
-            console.log("Task Document successfully updated!");
-            res.status(200).json(task);
-        })
-        .catch((error) => {
-            console.error("Error writing document: ", error);
-            res.status(500).send(`Error writing document: ${error}`);
-        });
-});
+tasksRouter.put(
+    "/subtasks",
+    tryCatch((req: Request, res: Response) => {
+        const taskUpdate: Task = req.body;
+        if(!taskUpdate?.name || !taskUpdate?.id || !taskUpdate?.subtasks) {
+            res.sendStatus(400);
+            return;
+        }
+        TaskService.updateSubtasks(taskUpdate)
+            .then((task) => {
+                if(!task) {
+                    console.log(NOT_FOUND_MESSAGE);
+                    throw new HttpException(NOT_FOUND_MESSAGE, null, 404);
+                }
+                console.log("Task Document successfully updated!");
+                res.status(200).json(cleanTaskDto(task));
+            })
+            .catch((error) => {
+                const errorMessage = "Error writing document ";
+                console.error(errorMessage, error);
+                throw new HttpException(errorMessage, JSON.stringify(error));
+            });
+    })
+);
 
 // DELETE /tasks/:id
 
@@ -248,11 +307,12 @@ tasksRouter.delete("/:id", (req: Request, res: Response) => {
      before being able to delete object
      **/
     const { id } = req.params;
-    console.log(`In delete with id : ${id}`)
+    console.log(`In delete with id : ${id}`);
+    let errorMessage;
     if (!id) {
-        console.log(`id ${id} not given`)
-        res.sendStatus(400)
-        return;
+        errorMessage = `id parameter not provided`;
+        console.log(errorMessage);
+        throw new HttpException(errorMessage, null, 400);
     }
     TaskService.findInCacheById(id)
         .then(task => {
@@ -279,67 +339,69 @@ tasksRouter.delete("/:id", (req: Request, res: Response) => {
                 }
                 TaskService.remove(id).then((id) => {
                     console.log("Task Document deleted");
-                    res.status(204).send(id);
+                    res.status(202).send(id);
                 }).catch((error) => {
-                    console.log("Error deleting document:", error);
-                    res.status(500).send(`Error deleting document: ${error}`);
+                    errorMessage = "Error deleting document ";
+                    console.log(errorMessage, error);
+                    throw new HttpException(errorMessage, JSON.stringify(error));
                 });
             } else {
                 console.log("No such document!!!!");
-                res.sendStatus(404);
+                res.sendStatus(204);
             }
         });
 });
 
 // DELETE /tasks?name=name
 
-tasksRouter.delete("/", (req: Request, res: Response) => {
-    /** Front end has to handle the cascade
-     => force user to delete character in all stories and relationships
-     before being able to delete object
-     **/
-    let name = req.query?.name ?? "";
-    console.log(`In delete by name with name : ${name}`);
-    if (!name) {
-        console.log("Name not provided!")
-        res.sendStatus(400);
-        return;
-    }
-    name = name.toString();
-    TaskService.findInCacheByName(name)
-        .then(task => {
-            if(task){
-                //Delete its subtasks
-                task.subtasks?.forEach(subtaskId =>{
-                    TaskService.remove(subtaskId).then((subtaskId) => {
-                        console.log(`Subtask Document ${subtaskId} deleted`);
-                    }).catch((error) => {
-                        console.log("Error deleting document:", error);
-                    });
-                })
-                //Delete it from its supertask list of subtasks
-                if(task.superTask){
-                    TaskService.findInCacheById(task.superTask).then((superTask)=>{
-                        if(superTask){
-                            const subtasks = superTask.subtasks?.filter((subtask)=>subtask!==task.id);
-                            superTask = {...superTask, subtasks}
-                            TaskService.updateSubtasks(superTask).then(() => {
-                                console.log(`SuperTask ${superTask?.id} subtasks updated to remove ${task.id}. New subtasks : ${JSON.stringify(superTask?.subtasks)}`);
-                            });
-                        }
+tasksRouter.delete(
+    "/",
+    tryCatch((req: Request, res: Response) => {
+        let name = req.query?.name ?? "";
+        console.log(`In delete by name with name : ${name}`);
+        let errorMessage;
+        if (!name) {
+            errorMessage = "Name not provided!";
+            console.log(errorMessage);
+            throw new HttpException(errorMessage, null, 400);
+        }
+        name = name.toString();
+        TaskService.findInCacheByName(name)
+            .then(task => {
+                if(task){
+                    //Delete its subtasks
+                    task.subtasks?.forEach(subtaskId =>{
+                        TaskService.remove(subtaskId).then((subtaskId) => {
+                            console.log(`Subtask Document ${subtaskId} deleted`);
+                        }).catch((error) => {
+                            console.log("Error deleting document:", error);
+                        });
                     })
-                }
+                    //Delete it from its supertask list of subtasks
+                    if(task.superTask){
+                        TaskService.findInCacheById(task.superTask).then((superTask)=>{
+                            if(superTask){
+                                const subtasks = superTask.subtasks?.filter((subtask)=>subtask!==task.id);
+                                superTask = {...superTask, subtasks}
+                                TaskService.updateSubtasks(superTask).then(() => {
+                                    console.log(`SuperTask ${superTask?.id} subtasks updated to remove ${task.id}. New subtasks : ${JSON.stringify(superTask?.subtasks)}`);
+                                });
+                            }
+                        })
+                    }
 
-                TaskService.remove(task.id).then((id) => {
-                    console.log("Task Document deleted");
-                    res.status(204).send(id);
-                }).catch((error) => {
-                    console.log("Error deleting document:", error);
-                    res.status(500).send(`Error deleting document: ${error}`);
-                });
-            } else {
-                console.log("No such document!!!!");
-                res.sendStatus(404);
-            }
-        });
-});
+                    TaskService.remove(task.id).then((id) => {
+                        console.log("Task Document deleted");
+                        res.status(202).send(id);
+                    }).catch((error) => {
+                        errorMessage = "Error deleting document ";
+                        console.log(errorMessage, error);
+                        throw new HttpException(errorMessage, JSON.stringify(error))
+                    });
+                } else {
+                    console.log("No such document!!!!");
+                    res.sendStatus(204);
+                }
+            });
+        })
+);
