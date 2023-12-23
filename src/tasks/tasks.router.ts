@@ -16,6 +16,7 @@ import HttpException from "../common/http-exception.js";
 export const tasksRouter = express.Router();
 
 const NOT_FOUND_MESSAGE = "😅 Resource not found! 🏳️";
+let errorMessage: string;
 
 const cleanTaskDto = (task: Task) : Task => {
     const result: Task = {} as Task;
@@ -114,7 +115,7 @@ tasksRouter.get(
             res.set('Cache-Control', 'public, max-age=120, s-maxage=300');
             res.status(200).send(results);
         }).catch((error) => {
-            const errorMessage = "Error getting document ";
+            errorMessage = "Error getting document ";
             console.error(errorMessage, error);
             throw new HttpException(errorMessage, JSON.stringify(error));
         });
@@ -129,7 +130,6 @@ tasksRouter.get(
 
         const { id } = req.params;
         console.log(`In Get by id with id : ${id}`);
-        let errorMessage: string;
         if (!id) {
             errorMessage = `id parameter not provided`;
             console.log(errorMessage);
@@ -160,7 +160,6 @@ tasksRouter.get(
 
         let { name } = req.params;
         console.log(`In Get by name with name : ${name}`);
-        let errorMessage: string;
         if (!name) {
             errorMessage = `name parameter not provided`;
             console.log(errorMessage);
@@ -201,7 +200,7 @@ tasksRouter.post(
                 res.status(201).json(cleanTaskDto(newTask));
             })
             .catch((error) => {
-                const errorMessage = "Error adding document ";
+                errorMessage = "Error adding document ";
                 console.error(errorMessage, error);
                 throw new HttpException(errorMessage, JSON.stringify(error));
             });
@@ -219,7 +218,6 @@ tasksRouter.post(
         const showMedata= req.query?.showMedata ? ((req.query?.showMedata + "").toLowerCase?.() === 'true') : true;
         let results: TaskResult;
 
-        let errorMessage: string;
         if(!userId) {
             errorMessage = "User parameter missing";
             console.log(errorMessage);
@@ -251,7 +249,6 @@ tasksRouter.put(
     tryCatch((req: Request, res: Response) => {
         const taskUpdate: Task = req.body;
         console.log(`In update! data sent : ${JSON.stringify(taskUpdate)}`);
-        let errorMessage: string;
         if(!taskUpdate?.name || !taskUpdate?.id) {
             errorMessage = "Missing data in request body!";
             console.log(errorMessage);
@@ -282,8 +279,9 @@ tasksRouter.put(
     tryCatch((req: Request, res: Response) => {
         const taskUpdate: Task = req.body;
         if(!taskUpdate?.name || !taskUpdate?.id || !taskUpdate?.subtasks) {
-            res.sendStatus(400);
-            return;
+            errorMessage = "Missing data in request body!";
+            console.log(errorMessage);
+            throw new HttpException(errorMessage, null, 400);
         }
         TaskService.updateSubtasks(taskUpdate)
             .then((task) => {
@@ -296,7 +294,7 @@ tasksRouter.put(
                 res.status(200).json(cleanTaskDto(task));
             })
             .catch((error) => {
-                const errorMessage = "Error writing document ";
+                errorMessage = "Error writing document ";
                 console.error(errorMessage, error);
                 throw new HttpException(errorMessage, JSON.stringify(error));
             });
@@ -305,56 +303,54 @@ tasksRouter.put(
 
 // DELETE /tasks/:id
 
-tasksRouter.delete("/:id", (req: Request, res: Response) => {
-    /** Front end has to handle the cascade
-     => force user to delete character in all stories and relationships
-     before being able to delete object
-     **/
-    const { id } = req.params;
-    console.log(`In delete with id : ${id}`);
-    let errorMessage: string;
-    if (!id) {
-        errorMessage = `id parameter not provided`;
-        console.log(errorMessage);
-        throw new HttpException(errorMessage, null, 400);
-    }
-    TaskService.findById(id)
-        .then(task => {
-            if(task){
-                //Delete its subtasks
-                task.subtasks?.forEach(subtaskId =>{
-                    TaskService.remove(subtaskId).then((subtaskId) => {
-                        console.log(`Subtask Document ${subtaskId} deleted`);
-                    }).catch((error) => {
-                        console.log("Error deleting document:", error);
-                    });
-                })
-                //Delete it from its supertask list of subtasks
-                if(task.superTask){
-                    TaskService.findById(task.superTask).then((superTask)=>{
-                        if(superTask){
-                            const subtasks = superTask.subtasks?.filter((subtask)=>subtask!==task.id);
-                            superTask = {...superTask, subtasks}
-                            TaskService.updateSubtasks(superTask).then(() => {
-                                console.log(`SuperTask ${superTask?.id} subtasks updated to remove ${task.id}. New subtasks : ${JSON.stringify(superTask?.subtasks)}`);
-                            });
-                        }
+tasksRouter.delete(
+    "/:id",
+    tryCatch((req: Request, res: Response) => {
+        const { id } = req.params;
+        console.log(`In delete with id : ${id}`);
+        if (!id) {
+            errorMessage = `id parameter not provided`;
+            console.log(errorMessage);
+            throw new HttpException(errorMessage, null, 400);
+        }
+        TaskService.findById(id)
+            .then(task => {
+                if(task){
+                    //Delete its subtasks
+                    task.subtasks?.forEach(subtaskId =>{
+                        TaskService.remove(subtaskId).then((subtaskId) => {
+                            console.log(`Subtask Document ${subtaskId} deleted`);
+                        }).catch((error) => {
+                            console.log("Error deleting document:", error);
+                        });
                     })
+                    //Delete it from its supertask list of subtasks
+                    if(task.superTask){
+                        TaskService.findById(task.superTask).then((superTask)=>{
+                            if(superTask){
+                                const subtasks = superTask.subtasks?.filter((subtask)=>subtask!==task.id);
+                                superTask = {...superTask, subtasks}
+                                TaskService.updateSubtasks(superTask).then(() => {
+                                    console.log(`SuperTask ${superTask?.id} subtasks updated to remove ${task.id}. New subtasks : ${JSON.stringify(superTask?.subtasks)}`);
+                                });
+                            }
+                        })
+                    }
+                    TaskService.remove(id).then((id) => {
+                        console.log("Task Document deleted");
+                        res.status(202).send(id);
+                    }).catch((error) => {
+                        errorMessage = "Error deleting document ";
+                        console.log(errorMessage, error);
+                        throw new HttpException(errorMessage, JSON.stringify(error));
+                    });
+                } else {
+                    console.log(NOT_FOUND_MESSAGE);
+                    throw new HttpException(NOT_FOUND_MESSAGE, null, 204);
                 }
-                TaskService.remove(id).then((id) => {
-                    console.log("Task Document deleted");
-                    res.status(202).send(id);
-                }).catch((error) => {
-                    errorMessage = "Error deleting document ";
-                    console.log(errorMessage, error);
-                    throw new HttpException(errorMessage, JSON.stringify(error));
-                });
-            } else {
-                console.log("No such document!!!!");
-                res.sendStatus(204);
-            }
-        });
-});
+            });
+    })
+);
 
 // DELETE /tasks?name=name
 
@@ -363,7 +359,6 @@ tasksRouter.delete(
     tryCatch((req: Request, res: Response) => {
         let name = req.query?.name ?? "";
         console.log(`In delete by name with name : ${name}`);
-        let errorMessage: string;
         if (!name) {
             errorMessage = "Name not provided!";
             console.log(errorMessage);
@@ -403,8 +398,8 @@ tasksRouter.delete(
                         throw new HttpException(errorMessage, JSON.stringify(error))
                     });
                 } else {
-                    console.log("No such document!!!!");
-                    res.sendStatus(204);
+                    console.log(NOT_FOUND_MESSAGE);
+                    throw new HttpException(NOT_FOUND_MESSAGE, null, 204);
                 }
             });
         })

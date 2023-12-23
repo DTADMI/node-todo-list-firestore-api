@@ -2,7 +2,6 @@
 /**
  * TODO:
  * Logger middleware
- * Error handler middleware
  * */
 
 
