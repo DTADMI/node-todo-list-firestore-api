@@ -136,7 +136,7 @@ tasksRouter.get(
             throw new HttpException(errorMessage, null, 400);
         }
 
-        TaskService.findInCacheById(id.toString()).then((task: Task | null) => {
+        TaskService.findById(id.toString()).then((task: Task | null) => {
             if (!task) {
                 console.log(NOT_FOUND_MESSAGE);
                 throw new HttpException(NOT_FOUND_MESSAGE, null, 404);
@@ -168,7 +168,7 @@ tasksRouter.get(
         }
 
         name = name.toString();
-        TaskService.findInCacheByName(name).then((task: Task | null) => {
+        TaskService.findByName(name).then((task: Task | null) => {
             if(!task) {
                 console.log(NOT_FOUND_MESSAGE);
                 throw new HttpException(NOT_FOUND_MESSAGE, null, 404);
@@ -318,7 +318,7 @@ tasksRouter.delete("/:id", (req: Request, res: Response) => {
         console.log(errorMessage);
         throw new HttpException(errorMessage, null, 400);
     }
-    TaskService.findInCacheById(id)
+    TaskService.findById(id)
         .then(task => {
             if(task){
                 //Delete its subtasks
@@ -331,7 +331,7 @@ tasksRouter.delete("/:id", (req: Request, res: Response) => {
                 })
                 //Delete it from its supertask list of subtasks
                 if(task.superTask){
-                    TaskService.findInCacheById(task.superTask).then((superTask)=>{
+                    TaskService.findById(task.superTask).then((superTask)=>{
                         if(superTask){
                             const subtasks = superTask.subtasks?.filter((subtask)=>subtask!==task.id);
                             superTask = {...superTask, subtasks}
@@ -370,7 +370,7 @@ tasksRouter.delete(
             throw new HttpException(errorMessage, null, 400);
         }
         name = name.toString();
-        TaskService.findInCacheByName(name)
+        TaskService.findByName(name)
             .then(task => {
                 if(task){
                     //Delete its subtasks
@@ -383,7 +383,7 @@ tasksRouter.delete(
                     })
                     //Delete it from its supertask list of subtasks
                     if(task.superTask){
-                        TaskService.findInCacheById(task.superTask).then((superTask)=>{
+                        TaskService.findById(task.superTask).then((superTask)=>{
                             if(superTask){
                                 const subtasks = superTask.subtasks?.filter((subtask)=>subtask!==task.id);
                                 superTask = {...superTask, subtasks}

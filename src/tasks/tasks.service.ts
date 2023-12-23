@@ -12,7 +12,7 @@
 
 import {BaseTask, Task} from "./task.interface.js";
 import {db} from "../common/firebase.js";
-import NodeCache from "node-cache";
+import {cache, CACHE_KEYS, clearAllCache} from "../common/cache.service";
 
 /**
  * Firebase Store
@@ -21,33 +21,9 @@ import NodeCache from "node-cache";
 const TaskCollection = db.collection("Task");
 
 /**
- * Cache initialization
- * **/
-const cache = new NodeCache( { stdTTL: 120, checkperiod: 600 } );
-const CACHE_KEYS = {
-    ALL_TASKS : "All tasks",
-    USER_TASKS: "User tasks",
-    TASK: "Task_"
-}
-
-/**
  * Service Methods
  */
 
-
-export const find = async (/*orderByField?: string, orderByOrder?: string, limit?: number, startAfter?: string, showMedata: boolean*/): Promise<Task[]> => {
-
-    /*const orderBField = orderByField ?? "creationDate";
-    const orderBOrder = orderByOrder ?? "asc";
-    const lim = limit ?? 0;
-    const startFieldValue = startAfter ?? "";*/
-    return TaskCollection/*.orderBy(orderBField, orderBOrder as OrderByDirection).startAfter(startFieldValue).limit(lim)*/.get().then((snapshot)=>{
-        /*let results = {};
-        results.data = */
-        return snapshot.docs.map((doc) => doc.data() as Task);
-        //return results;
-    })
-};
 
 export const findAll = async (): Promise<Task[]> => {
     const cacheKey = CACHE_KEYS.ALL_TASKS;
@@ -81,25 +57,6 @@ export const findAllFromUser = async (userId: string): Promise<Task[]> => {
 }
 
 export const findById = async (id: string): Promise<Task | null> => {
-    const cacheKey = CACHE_KEYS.TASK + id;
-    if(cache.has(cacheKey)) {
-        return Promise.resolve(cache.get<Task>(cacheKey) as Task);
-    }
-    const docRef = TaskCollection.doc(id);
-    return docRef.get().then((doc) => {
-        if (doc.exists) {
-            console.log("Task Document data:", doc.data());
-            const task: Task = doc.data() as Task;
-            cache.set<Task>(cacheKey, task);
-            return task;
-        } else {
-            console.log("No such document!!!!!");
-            return null;
-        }
-    })
-};
-
-export const findInCacheById = async (id: string): Promise<Task | null> => {
     const cacheKey = CACHE_KEYS.ALL_TASKS;
     if(cache.has(cacheKey)) {
         const tasks = cache.get<Task[]>(cacheKey) as Task[];
@@ -118,24 +75,6 @@ export const findInCacheById = async (id: string): Promise<Task | null> => {
 };
 
 export const findByName = async (name: string): Promise<Task | null> => {
-    const cacheKey = CACHE_KEYS.TASK + name;
-    if(cache.has(cacheKey)) {
-        return Promise.resolve(cache.get<Task>(cacheKey) as Task);
-    }
-
-    return TaskCollection.where('name', '==', name).get().then((snapshot)=>{
-        const task: Task | null = snapshot.docs.map((doc) => {
-            return doc.data() as Task;
-        })[0] ?? null;
-        if(task){
-            cache.set<Task>(cacheKey, task);
-        }
-        return task;
-    })
-};
-
-
-export const findInCacheByName = async (name: string): Promise<Task | null> => {
     const cacheKey = CACHE_KEYS.ALL_TASKS;
     if(cache.has(cacheKey)) {
         const tasks = cache.get<Task[]>(cacheKey) as Task[];
@@ -156,8 +95,7 @@ export const create = (newBaseTask: BaseTask): Promise<Task> => {
     return TaskCollection.add(newTask)
         .then((docRef) => {
             console.log("Task Document written with ID: ", docRef.id);
-            cache.del(CACHE_KEYS.ALL_TASKS);
-            cache.del(CACHE_KEYS.USER_TASKS);
+            clearAllCache();
             TaskCollection.doc(docRef.id).update({
                 id: docRef.id
             }).then(() => {
@@ -178,10 +116,7 @@ export const update = async (
     return docRef.set(dataUpdate, {merge: true})
         .then(() => {
             console.log("Task Document successfully updated!");
-            cache.del(CACHE_KEYS.TASK + dataUpdate.id);
-            cache.del(CACHE_KEYS.TASK + dataUpdate.name);
-            cache.del(CACHE_KEYS.ALL_TASKS);
-            cache.del(CACHE_KEYS.USER_TASKS);
+            clearAllCache();
             return docRef.get().then((doc) => {
                 if (doc.exists) {
                     console.log("Task Document data:", doc.data());
@@ -205,10 +140,7 @@ export const updateSubtasks = async (
     return docRef.set(dataUpdate, {merge: true})
         .then(() => {
             console.log(`Task Document ${taskUpdate.id} successfully updated with subtasks ${JSON.stringify(dataUpdate.subtasks)}!`);
-            cache.del(CACHE_KEYS.TASK + taskUpdate.id);
-            cache.del(CACHE_KEYS.TASK + taskUpdate.name);
-            cache.del(CACHE_KEYS.ALL_TASKS);
-            cache.del(CACHE_KEYS.USER_TASKS);
+            clearAllCache();
             dataUpdate.subtasks.forEach((subtaskId) => {
                 const subtaskDocRef = TaskCollection.doc(subtaskId);
                 const subtaskDataUpdate = {
@@ -218,7 +150,6 @@ export const updateSubtasks = async (
                 subtaskDocRef.set(subtaskDataUpdate, {merge: true})
                     .then(() => {
                         console.log(`Subtask Document ${subtaskId} successfully updated with superTask ${taskUpdate.id}!`);
-                        cache.del(CACHE_KEYS.TASK + subtaskId);
                     });
             });
             return docRef.get().then((doc) => {
@@ -239,9 +170,7 @@ export const remove = async (id: string): Promise<string | void> => {
     const docRef = TaskCollection.doc(id);
     return docRef.delete().then(() => {
         console.log("Task Document deleted");
-        cache.del(CACHE_KEYS.TASK + id);
-        cache.del(CACHE_KEYS.USER_TASKS);
-        cache.del(CACHE_KEYS.ALL_TASKS);
+        clearAllCache();
         return id;
     })
 };

@@ -40,9 +40,9 @@ const limiter = rateLimit({
     standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
     // store: ... , // Use an external store for consistency across multiple server instances.
-})
+});
 
-app.use(limiter)
+app.use(limiter);
 app.use(helmet());
 app.use(compression());
 app.use(cors());
