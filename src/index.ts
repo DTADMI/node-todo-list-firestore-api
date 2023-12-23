@@ -8,6 +8,8 @@ import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
+import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import { tasksRouter } from "./tasks/tasks.router.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 import * as functions from "firebase-functions";
@@ -42,11 +44,14 @@ const limiter = rateLimit({
     // store: ... , // Use an external store for consistency across multiple server instances.
 });
 
+app.use(morgan('combined'));
 app.use(limiter);
 app.use(helmet());
 app.use(compression());
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use("/todolist/tasks", tasksRouter);
 
 app.use(errorHandler);

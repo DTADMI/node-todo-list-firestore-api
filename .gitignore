@@ -102,7 +102,6 @@ dist
 
 # vuepress v2.x temp and cache directory
 .temp
-.cache
 
 # Docusaurus cache and generated files
 .docusaurus
@@ -131,10 +130,8 @@ dist
 
 */.env
 */node_modules
-*/package-lock.json
 /.idea/
 /.env
-/package-lock.json
 
 # Compiled output
 /dist
