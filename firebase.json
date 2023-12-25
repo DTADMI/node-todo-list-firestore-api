@@ -16,6 +16,7 @@
     }
   ],
   "hosting": {
+    "site": "node-todo-list-api",
     "public": "public",
     "ignore": [
       "firebase.json",
