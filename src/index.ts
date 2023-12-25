@@ -13,6 +13,8 @@ import cookieParser from 'cookie-parser';
 import { tasksRouter } from "./tasks/tasks.router.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 import * as functions from "firebase-functions";
+import {authRouter} from "./auth/authRouter";
+import {authenticationHandler} from "./middleware/auth.middleware";
 
 
 dotenv.config();
@@ -52,6 +54,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use("/auth", authRouter);
+
+app.use(authenticationHandler);
 app.use("/todolist/tasks", tasksRouter);
 
 app.use(errorHandler);
@@ -60,8 +65,8 @@ app.use(errorHandler);
  * Server Activation
  */
 
+exports.api = functions.https.onRequest(app);
+
 app.listen(SERVER_PORT, () => {
     console.log(`Listening on port ${SERVER_PORT}`);
 });
-
-exports.api = functions.https.onRequest(app);

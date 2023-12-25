@@ -26,5 +26,13 @@
       "source": "**",
       "function": "api"
     }]
+  },
+  "emulators": {
+    "functions": {
+      "port": "7008"
+    },
+    "hosting": {
+      "port": "7009"
+    }
   }
 }

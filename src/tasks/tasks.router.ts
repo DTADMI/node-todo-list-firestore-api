@@ -346,7 +346,7 @@ tasksRouter.delete(
                     });
                 } else {
                     console.log(NOT_FOUND_MESSAGE);
-                    throw new HttpException(NOT_FOUND_MESSAGE, null, 204);
+                    res.status(204);
                 }
             });
     })
@@ -399,7 +399,7 @@ tasksRouter.delete(
                     });
                 } else {
                     console.log(NOT_FOUND_MESSAGE);
-                    throw new HttpException(NOT_FOUND_MESSAGE, null, 204);
+                    res.status(204);
                 }
             });
         })
