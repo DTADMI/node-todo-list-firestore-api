@@ -3,7 +3,6 @@
  */
 
 import express, {Request, Response} from "express";
-//import cors from "cors";
 import {tryCatch} from "../utils/tryCatch";
 import HttpException from "../common/http-exception";
 import {logInWithEmailAndPassword, signUpWithEmailAndPassword} from "../common/firebase";
@@ -18,21 +17,6 @@ export const authRouter = express.Router();
 /**
  *  App Configuration
  */
-/*
-const whitelist = [process.env.CLIENT_URL];
-
-const corsOptions = {
-  origin: (origin, callback) => {
-      if(whitelist.indexOf(origin) !== -1){
-          callback(null, true);
-      } else {
-          callback(new Error("Not allowed by CORS"));
-      }
-  }
-};
-
-authRouter.use(cors(corsOptions));*/
-
 
 authRouter.post(
     "/register",

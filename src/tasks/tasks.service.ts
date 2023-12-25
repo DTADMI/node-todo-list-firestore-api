@@ -164,12 +164,11 @@ export const updateSubtasks = async (
 };
 
 
-export const remove = async (id: string): Promise<string | void> => {
+export const remove = async (id: string): Promise<void> => {
     console.log(`Deletion started for id : ${id}`)
     const docRef = TaskCollection.doc(id);
     return docRef.delete().then(() => {
         console.log("Task Document deleted");
         clearAllCache();
-        return id;
     })
 };

@@ -316,34 +316,8 @@ tasksRouter.delete(
         TaskService.findById(id)
             .then(task => {
                 if(task){
-                    //Delete its subtasks
-                    task.subtasks?.forEach(subtaskId =>{
-                        TaskService.remove(subtaskId).then((subtaskId) => {
-                            console.log(`Subtask Document ${subtaskId} deleted`);
-                        }).catch((error) => {
-                            console.log("Error deleting document:", error);
-                        });
-                    })
-                    //Delete it from its supertask list of subtasks
-                    if(task.superTask){
-                        TaskService.findById(task.superTask).then((superTask)=>{
-                            if(superTask){
-                                const subtasks = superTask.subtasks?.filter((subtask)=>subtask!==task.id);
-                                superTask = {...superTask, subtasks}
-                                TaskService.updateSubtasks(superTask).then(() => {
-                                    console.log(`SuperTask ${superTask?.id} subtasks updated to remove ${task.id}. New subtasks : ${JSON.stringify(superTask?.subtasks)}`);
-                                });
-                            }
-                        })
-                    }
-                    TaskService.remove(id).then((id) => {
-                        console.log("Task Document deleted");
-                        res.status(202).send(id);
-                    }).catch((error) => {
-                        errorMessage = "Error deleting document ";
-                        console.log(errorMessage, error);
-                        throw new HttpException(errorMessage, JSON.stringify(error));
-                    });
+                    deleteTaskInCascade(task);
+                    res.sendStatus(202);
                 } else {
                     console.log(NOT_FOUND_MESSAGE);
                     res.status(204);
@@ -368,35 +342,8 @@ tasksRouter.delete(
         TaskService.findByName(name)
             .then(task => {
                 if(task){
-                    //Delete its subtasks
-                    task.subtasks?.forEach(subtaskId =>{
-                        TaskService.remove(subtaskId).then((subtaskId) => {
-                            console.log(`Subtask Document ${subtaskId} deleted`);
-                        }).catch((error) => {
-                            console.log("Error deleting document:", error);
-                        });
-                    })
-                    //Delete it from its supertask list of subtasks
-                    if(task.superTask){
-                        TaskService.findById(task.superTask).then((superTask)=>{
-                            if(superTask){
-                                const subtasks = superTask.subtasks?.filter((subtask)=>subtask!==task.id);
-                                superTask = {...superTask, subtasks}
-                                TaskService.updateSubtasks(superTask).then(() => {
-                                    console.log(`SuperTask ${superTask?.id} subtasks updated to remove ${task.id}. New subtasks : ${JSON.stringify(superTask?.subtasks)}`);
-                                });
-                            }
-                        })
-                    }
-
-                    TaskService.remove(task.id).then((id) => {
-                        console.log("Task Document deleted");
-                        res.status(202).send(id);
-                    }).catch((error) => {
-                        errorMessage = "Error deleting document ";
-                        console.log(errorMessage, error);
-                        throw new HttpException(errorMessage, JSON.stringify(error))
-                    });
+                    deleteTaskInCascade(task);
+                    res.sendStatus(202);
                 } else {
                     console.log(NOT_FOUND_MESSAGE);
                     res.status(204);
@@ -404,3 +351,46 @@ tasksRouter.delete(
             });
         })
 );
+
+const deleteTasksSubtasks = (task: Task) => {
+    task.subtasks?.forEach((subtaskId: string) =>{
+        TaskService.remove(subtaskId).then((subtaskId) => {
+            console.log(`Subtask Document ${subtaskId} deleted`);
+        }).catch((error) => {
+            console.log("Error deleting document:", error);
+        });
+    });
+}
+
+const deleteTaskFromSuperTask = (task: Task) => {
+    if(task.superTask){
+        TaskService.findById(task.superTask).then((superTask: Task | null)=>{
+            if(superTask){
+                const subtasks = superTask.subtasks?.filter((subtask)=>subtask!==task.id);
+                superTask = {...superTask, subtasks}
+                TaskService.updateSubtasks(superTask).then(() => {
+                    console.log(`SuperTask ${superTask?.id} subtasks updated to remove ${task.id}. New subtasks : ${JSON.stringify(superTask?.subtasks)}`);
+                });
+            }
+        })
+    }
+}
+
+const deleteTask = (task: Task) => {
+    TaskService.remove(task.id).then(() => {
+        console.log(`Task Document ${task.id} deleted`);
+    }).catch((error) => {
+        errorMessage = "Error deleting document ";
+        console.log(errorMessage, error);
+        throw new HttpException(errorMessage, JSON.stringify(error))
+    });
+}
+
+const deleteTaskInCascade = (task: Task) => {
+    //Delete its subtasks
+    deleteTasksSubtasks(task);
+    //Delete it from its supertask list of subtasks
+    deleteTaskFromSuperTask(task);
+
+    deleteTask(task);
+}
