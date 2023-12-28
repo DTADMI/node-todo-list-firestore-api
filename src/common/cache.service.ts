@@ -9,10 +9,6 @@ export const CACHE_KEYS = {
     USER_TASKS: "User tasks"
 }
 
-export const deleteCache = (cacheKey: string) => {
-    cache.del(cacheKey);
-}
-
 export const clearAllCache = () => {
     for (const cacheKey of Object.keys(CACHE_KEYS)) {
         cache.del(cacheKey);

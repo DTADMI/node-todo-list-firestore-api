@@ -120,31 +120,6 @@ const filterAndPaginateTasks = (page: string, limit: string, showMedata: boolean
  * Controller Definitions
  */
 
-/*
-// GET tasks/
-tasksRouter.get(
-    "/",
-    tryCatch((req: Request, res: Response) => {
-        writeLog("starting get all");
-        const page= req.query?.page ?? "";
-        const limit= req.query?.limit ?? "";
-        const showMedata= req.query?.showMedata ? ((req.query?.showMedata + "").toLowerCase?.() === 'true') : true;
-        let results: TaskResult;
-        TaskService.findAll().then((tasks: Task[])=> {
-            if(!tasks?.length){
-                writeLog("no result");
-            }
-            results = filterAndPaginateTasks(page.toString(), limit.toString(), showMedata, tasks);
-            res.set('Cache-Control', 'public, max-age=120, s-maxage=300');
-            res.status(200).send(results);
-        }).catch((error) => {
-            errorMessage = "Error getting document ";
-            writeError(`errorMessage : ${errorMessage}`);
-            throw new HttpException(errorMessage, JSON.stringify(error));
-        });
-    })
-);*/
-
 // GET tasks/:id
 
 tasksRouter.get(
