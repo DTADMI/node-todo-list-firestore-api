@@ -2,6 +2,7 @@
 
 import HttpException from "../common/http-exception.js";
 import { Request, Response, NextFunction } from "express";
+import {writeError} from "../common/logger.service";
 
 export const errorHandler = (
     error: HttpException,
@@ -12,6 +13,6 @@ export const errorHandler = (
 ) => {
     const status = error.statusCode ?? 500;
     const message = `😱 An error occurred during the request 💀: ${JSON.stringify(error)}`;
-    console.error(message);
+    writeError(message);
     return response.status(status).send(message);
 };

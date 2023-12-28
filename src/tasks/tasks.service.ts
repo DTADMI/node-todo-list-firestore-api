@@ -1,9 +1,4 @@
 // src/maps/maps.service.ts
-/**
- * TODO:
- * Logger middleware
- * */
-
 
 /**
  * Data Model Interfaces
@@ -12,6 +7,7 @@
 import {BaseTask, Task} from "./task.interface.js";
 import {db} from "../common/firebase.js";
 import {cache, CACHE_KEYS, clearAllCache} from "../common/cache.service";
+import {writeLog} from "../common/logger.service";
 
 /**
  * Firebase Store
@@ -40,7 +36,7 @@ export const findAll = async (): Promise<Task[]> => {
 };
 
 export const findAllFromUser = async (userId: string): Promise<Task[]> => {
-    console.log(`findAllFromUser with userId: ${userId}`);
+    writeLog(`findAllFromUser with userId: ${userId}`);
     const cacheKey = CACHE_KEYS.USER_TASKS;
     if(cache.has(cacheKey)){
         return Promise.resolve(cache.get<Task[]>(cacheKey) as Task[]);
@@ -64,10 +60,10 @@ export const findById = async (id: string): Promise<Task | null> => {
     const docRef = TaskCollection.doc(id);
     return docRef.get().then((doc) => {
         if (doc.exists) {
-            console.log("Task Document data:", doc.data());
+            writeLog(`Task Document data: ${doc.data()}`);
             return doc.data() as Task;
         } else {
-            console.log("No such document!!!!!");
+            writeLog("No such document!!!!!");
             return null;
         }
     })
@@ -87,44 +83,41 @@ export const findByName = async (name: string): Promise<Task | null> => {
     })
 };
 
-export const create = (newBaseTask: BaseTask): Promise<Task> => {
-    console.log(`Creating task ${JSON.stringify(newBaseTask)}`);
+export const create = async (newBaseTask: BaseTask): Promise<Task> => {
+    writeLog(`Creating task ${JSON.stringify(newBaseTask)}`);
     const now = new Date().toUTCString();
-    const newTask = { ...newBaseTask, creationDate: now, lastModificationDate: now}
-    return TaskCollection.add(newTask)
-        .then((docRef) => {
-            console.log("Task Document written with ID: ", docRef.id);
-            clearAllCache();
-            TaskCollection.doc(docRef.id).update({
-                id: docRef.id
-            }).then(() => {
-                console.log("Task Document id successfully updated!");
-            });
-            const task = {...newTask} as Task;
-            task.id = docRef.id;
-            return task;
-        });
+    const newTask = {...newBaseTask, creationDate: now, lastModificationDate: now}
+    const docRef = await TaskCollection.add(newTask);
+    writeLog(`Task Document written with ID: ${docRef.id}`);
+    clearAllCache();
+    TaskCollection.doc(docRef.id).update({
+        id: docRef.id
+    }).then(() => {
+        writeLog("Task Document id successfully updated!");
+    });
+    const task = {...newTask} as Task;
+    task.id = docRef.id;
+    return task;
 };
 
 export const update = async (
     taskUpdate: Task
 ): Promise<Task | null> => {
-    console.log(`Update started with : ${JSON.stringify(taskUpdate)}`);
+    writeLog(`Update started with : ${JSON.stringify(taskUpdate)}`);
     const dataUpdate = { ...taskUpdate, lastModificationDate: new Date().toUTCString()}
     const docRef = TaskCollection.doc(dataUpdate.id);
     return docRef.set(dataUpdate, {merge: true})
-        .then(() => {
-            console.log("Task Document successfully updated!");
+        .then(async () => {
+            writeLog("Task Document successfully updated!");
             clearAllCache();
-            return docRef.get().then((doc) => {
-                if (doc.exists) {
-                    console.log("Task Document data:", doc.data());
-                    return doc.data() as Task;
-                } else {
-                    console.log("No such document!!!!!!");
-                    return null;
-                }
-            });
+            const doc = await docRef.get();
+            if (doc.exists) {
+                writeLog(`Task Document data: ${doc.data()}`);
+                return doc.data() as Task;
+            } else {
+                writeLog("No such document!!!!!!");
+                return null;
+            }
         });
 };
 
@@ -137,8 +130,8 @@ export const updateSubtasks = async (
         lastModificationDate: new Date().toUTCString()
     };
     return docRef.set(dataUpdate, {merge: true})
-        .then(() => {
-            console.log(`Task Document ${taskUpdate.id} successfully updated with subtasks ${JSON.stringify(dataUpdate.subtasks)}!`);
+        .then(async () => {
+            writeLog(`Task Document ${taskUpdate.id} successfully updated with subtasks ${JSON.stringify(dataUpdate.subtasks)}!`);
             clearAllCache();
             dataUpdate.subtasks.forEach((subtaskId) => {
                 const subtaskDocRef = TaskCollection.doc(subtaskId);
@@ -148,27 +141,26 @@ export const updateSubtasks = async (
                 };
                 subtaskDocRef.set(subtaskDataUpdate, {merge: true})
                     .then(() => {
-                        console.log(`Subtask Document ${subtaskId} successfully updated with superTask ${taskUpdate.id}!`);
+                        writeLog(`Subtask Document ${subtaskId} successfully updated with superTask ${taskUpdate.id}!`);
                     });
             });
-            return docRef.get().then((doc) => {
-                if (doc.exists) {
-                    console.log("Task Document data:", doc.data());
-                    return doc.data() as Task;
-                } else {
-                    console.log("No such document!!!!!!!");
-                    return null;
-                }
-            });
+            const doc = await docRef.get();
+            if (doc.exists) {
+                writeLog(`Task Document data: ${doc.data()}`);
+                return doc.data() as Task;
+            } else {
+                writeLog("No such document!!!!!!!");
+                return null;
+            }
         });
 };
 
 
 export const remove = async (id: string): Promise<void> => {
-    console.log(`Deletion started for id : ${id}`)
+    writeLog(`Deletion started for id : ${id}`)
     const docRef = TaskCollection.doc(id);
     return docRef.delete().then(() => {
-        console.log("Task Document deleted");
+        writeLog("Task Document deleted");
         clearAllCache();
     })
 };

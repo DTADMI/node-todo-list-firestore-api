@@ -15,6 +15,7 @@ import { errorHandler } from "./middleware/error.middleware.js";
 import * as functions from "firebase-functions";
 import {authRouter} from "./auth/authRouter";
 import {authenticationHandler} from "./middleware/auth.middleware";
+import {writeLog} from "./common/logger.service";
 
 
 dotenv.config();
@@ -68,5 +69,5 @@ app.use(errorHandler);
 exports.api = functions.https.onRequest(app);
 
 app.listen(SERVER_PORT, () => {
-    console.log(`Listening on port ${SERVER_PORT}`);
+    writeLog(`Listening on port ${SERVER_PORT}`);
 });

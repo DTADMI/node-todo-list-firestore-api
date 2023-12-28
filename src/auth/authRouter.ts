@@ -6,6 +6,7 @@ import express, {Request, Response} from "express";
 import {tryCatch} from "../utils/tryCatch";
 import HttpException from "../common/http-exception";
 import {logInWithEmailAndPassword, signUpWithEmailAndPassword} from "../common/firebase";
+import {writeError, writeLog} from "../common/logger.service";
 
 
 
@@ -22,14 +23,14 @@ authRouter.post(
     "/register",
     tryCatch((req: Request, res: Response) => {
         const { email, password } = req.body;
-        console.log(`register email : ${email} password : ${password}`);
+        writeLog(`register email : ${email} password : ${password}`);
         signUpWithEmailAndPassword(email, password)
             .then((userCredentials) => {
                 const user = userCredentials.user;
-                console.log(`userCredentials : ${JSON.stringify(user)}`);
+                writeLog(`userCredentials : ${JSON.stringify(user)}`);
                 user!.getIdToken()
                     .then((token) => {
-                        console.log(`token : ${token}`);
+                        writeLog(`token : ${token}`);
                         res.status(201)
                             .json({
                                 data:{
@@ -39,16 +40,15 @@ authRouter.post(
                             }
                         );
                 }).catch((error) => {
-                    console.error(`Could not create token for the user ${email}`);
-                    console.error(`Error ${JSON.stringify(error)}`);
-
+                    writeError(`Could not create token for the user ${email}`);
+                    writeError(`Error ${JSON.stringify(error)}`);
                     throw new HttpException(`Could not create token for the user ${email}`, JSON.stringify(error));
                 })
             }).catch((error) => {
             const errorCode = error.code;
             const errorMessage = error.message;
-            console.error(`Could not create token for the user ${email}`);
-            console.error(`Error ${JSON.stringify(error)}`);
+            writeError(`Could not create token for the user ${email}`);
+            writeError(`Error ${JSON.stringify(error)}`);
 
             throw new HttpException(`${errorMessage}`, JSON.stringify(error), ["auth/credential-already-in-use", "auth/email-already-in-use"].includes(errorCode) ? 409 : 500);
         })
