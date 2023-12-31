@@ -9,6 +9,7 @@ import {TaskResult} from "./tasks.interface.js";
 import {tryCatch} from "../utils/tryCatch.js";
 import HttpException from "../common/http-exception.js";
 import {writeError, writeLog} from "../common/logger.service";
+import {getToken, SESSION_KEYS} from "../common/session.service";
 
 /**
  * Router Definition
@@ -119,6 +120,42 @@ const filterAndPaginateTasks = (page: string, limit: string, showMedata: boolean
 /**
  * Controller Definitions
  */
+
+// GET tasks
+
+tasksRouter.get(
+    "/",
+    tryCatch((req: Request, res: Response) => {
+        const { __session } = req.cookies;
+        const userId = getToken(__session, SESSION_KEYS.UID);
+        const page=req.query?.page ?? "";
+        const limit=req.query?.limit ?? "";
+        const showMedata= req.query?.showMedata ? ((req.query?.showMedata + "").toLowerCase?.() === 'true') : true;
+        let results: TaskResult;
+
+        if(!userId) {
+            errorMessage = "User parameter missing";
+            writeError(errorMessage);
+            throw new HttpException(errorMessage,null, 400);
+        }
+        writeLog(`Getting all owned tasks from ${userId}`);
+
+        TaskService.findAllFromUser(userId)
+            .then((tasks: Task[]) => {
+                if(!tasks?.length){
+                    writeLog("No result");
+                }
+                results = filterAndPaginateTasks(page.toString(), limit.toString(), showMedata, tasks);
+                res.set('Cache-Control', 'public, max-age=120, s-maxage=300');
+                res.status(200).send(results);
+            })
+            .catch((error) => {
+                errorMessage = "Error while getting all owned document "
+                writeError(`errorMessage: ${errorMessage}, \n error ${error}`);
+                throw new HttpException(errorMessage, JSON.stringify(error));
+            });
+    })
+);
 
 // GET tasks/:id
 
@@ -277,41 +314,6 @@ tasksRouter.post(
                         throw new HttpException(errorMessage, JSON.stringify(error));
                     });
         });
-    })
-);
-
-// POST tasks/
-
-tasksRouter.post(
-    "/",
-    tryCatch((req: Request, res: Response) => {
-        const { userId } = req.body;
-        const page=req.query?.page ?? "";
-        const limit=req.query?.limit ?? "";
-        const showMedata= req.query?.showMedata ? ((req.query?.showMedata + "").toLowerCase?.() === 'true') : true;
-        let results: TaskResult;
-
-        if(!userId) {
-            errorMessage = "User parameter missing";
-            writeError(errorMessage);
-            throw new HttpException(errorMessage,null, 400);
-        }
-        writeLog(`Getting all owned tasks from ${userId}`);
-
-        TaskService.findAllFromUser(userId)
-            .then((tasks: Task[]) => {
-                if(!tasks?.length){
-                    writeLog("No result");
-                }
-                results = filterAndPaginateTasks(page.toString(), limit.toString(), showMedata, tasks);
-                res.set('Cache-Control', 'public, max-age=120, s-maxage=300');
-                res.status(200).send(results);
-            })
-            .catch((error) => {
-                errorMessage = "Error while getting all owned document "
-                writeError(`errorMessage: ${errorMessage}, \n error ${error}`);
-                throw new HttpException(errorMessage, JSON.stringify(error));
-            });
     })
 );
 

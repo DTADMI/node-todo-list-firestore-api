@@ -14,7 +14,7 @@ import { tasksRouter } from "./tasks/tasks.router.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 import * as functions from "firebase-functions";
 import {authRouter} from "./auth/authRouter";
-import {authenticationHandler} from "./middleware/auth.middleware";
+import {authorizationHandler} from "./middleware/auth.middleware";
 import {writeLog} from "./common/logger.service";
 
 
@@ -41,23 +41,28 @@ const app = express();
  *  */
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+    limit: 25, // Limit each IP to 25 requests per `window` (here, per 15 minutes).
     standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
     // store: ... , // Use an external store for consistency across multiple server instances.
 });
 
+const corsOptions = {
+    origin: "https://darryltadmi-todo-list-angular.web.app/",
+    credentials: true
+}
+
 app.use(morgan('combined'));
 app.use(limiter);
 app.use(helmet());
 app.use(compression());
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use("/auth", authRouter);
 
-app.use(authenticationHandler);
+app.use(authorizationHandler);
 app.use("/todolist/tasks", tasksRouter);
 
 app.use(errorHandler);
