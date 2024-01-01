@@ -15,6 +15,7 @@ export const authorizationHandler = (
     const { __session } = request.cookies;
     writeLog(`token : ${token}`);
     writeLog(`sessionToken : ${__session}`);
+    writeLog(`csrfToken : ${csrfToken}`);
     if(!__session || !getSession(__session)) {
         return response.status(302).redirect("https://darryltadmi-todo-list-angular.web.app/signin/");
     }

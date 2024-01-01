@@ -26,7 +26,7 @@ export const SESSION_KEYS = {
 }
 
 export const createSession = (sessionToken: string, session: Session) : Session => {
-    writeLog(`Creating session : ${session}`);
+    writeLog(`Creating session : ${JSON.stringify(session)}`);
     if(!SESSION.has(sessionToken)){
         SESSION.set(sessionToken, session || {} as Session);
     } else {
@@ -34,25 +34,25 @@ export const createSession = (sessionToken: string, session: Session) : Session 
         SESSION.set(sessionToken, newSession);
     }
     const result = SESSION.get(sessionToken)!;
-    writeLog(`Created session : ${result}`);
+    writeLog(`Created session : ${JSON.stringify(result)}`);
     return result;
 }
 
 export const addToken = (sessionToken: string, tokenKey: string, tokenValue: string) => {
-    writeLog(`Adding token ${tokenKey} of value ${tokenValue} to session ${sessionToken}`);
+    writeLog(`Adding token ${tokenKey} of value ${tokenValue} to session ${JSON.stringify(sessionToken)}`);
     if(!SESSION.has(sessionToken)){
         createSession(sessionToken, {} as Session);
     }
     const session = SESSION.get(sessionToken)!;
     session[tokenKey] = tokenValue;
-    writeLog(`New session : ${session}`);
+    writeLog(`New session : ${JSON.stringify(session)}`);
 }
 
 export const revokeToken = (sessionToken: string, tokenKey: string) => {
     if(SESSION.has(sessionToken)){
         const session = SESSION.get(sessionToken)!;
         session[tokenKey] = "";
-        writeLog(`New session : ${session}`);
+        writeLog(`Revoked session : ${JSON.stringify(session)}`);
     }
 }
 

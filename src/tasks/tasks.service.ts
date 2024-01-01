@@ -60,7 +60,7 @@ export const findById = async (id: string): Promise<Task | null> => {
     const docRef = TaskCollection.doc(id);
     return docRef.get().then((doc) => {
         if (doc.exists) {
-            writeLog(`Task Document data: ${doc.data()}`);
+            writeLog(`Task Document data: ${JSON.stringify(doc.data())}`);
             return doc.data() as Task;
         } else {
             writeLog("No such document!!!!!");
@@ -112,7 +112,7 @@ export const update = async (
             clearAllCache();
             const doc = await docRef.get();
             if (doc.exists) {
-                writeLog(`Task Document data: ${doc.data()}`);
+                writeLog(`Task Document data: ${JSON.stringify(doc.data())}`);
                 return doc.data() as Task;
             } else {
                 writeLog("No such document!!!!!!");
@@ -146,7 +146,7 @@ export const updateSubtasks = async (
             });
             const doc = await docRef.get();
             if (doc.exists) {
-                writeLog(`Task Document data: ${doc.data()}`);
+                writeLog(`Task Document data: ${JSON.stringify(doc.data())}`);
                 return doc.data() as Task;
             } else {
                 writeLog("No such document!!!!!!!");

@@ -251,7 +251,7 @@ tasksRouter.post(
             writeError("task parameter must contain a name");
             throw new HttpException("task parameter must contain a name", null, 400);
         }
-        writeLog(`Creating task ${task}`);
+        writeLog(`Creating task ${JSON.stringify(task)}`);
         TaskService.create(task)
             .then((newTask) => {
                 writeLog(`Task Document written with ID:  ${newTask.id}`);
@@ -282,7 +282,7 @@ tasksRouter.post(
             writeError("supertask parameter must be provided");
             throw new HttpException("supertask parameter must be provided", null, 400);
         }
-        writeLog(`Creating subtask ${task} for task : ${id}`);
+        writeLog(`Creating subtask ${JSON.stringify(task)} for task : ${id}`);
         TaskService.findById(id)
             .then((supertask) => {
                 if(!supertask) {

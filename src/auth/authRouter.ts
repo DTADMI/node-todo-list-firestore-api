@@ -33,7 +33,9 @@ authRouter.get(
     "/csrfToken",
     tryCatch((req: Request, res: Response) => {
         const { __session } = req.cookies;
+        writeLog(`session token: ${__session}`)
         const csrfToken = crypto.randomUUID();
+        writeLog(`csrf token:${csrfToken}`);
         addToken(__session, SESSION_KEYS.CSRF_TOKEN, csrfToken);
         res.status(200).send({csrfToken});
     })
@@ -60,16 +62,16 @@ authRouter.post(
                                     createSession(sessionCookie, {});
                                     addToken(sessionCookie, SESSION_KEYS.UID, user!.uid);
                                     addToken(sessionCookie, SESSION_KEYS.ACCESS_TOKEN, token);
-                                    addToken(sessionCookie, SESSION_KEYS.REFRESH_TOKEN, user!["stsTokenManager"].refreshToken);
+                                    addToken(sessionCookie, SESSION_KEYS.REFRESH_TOKEN, user!.refreshToken);
 
-                                    res.status(201)
+                                    res.status(201).cookie("__session", sessionCookie, options)
                                         .json({
                                                 data:{
                                                     user,
                                                     token
                                                 }
                                             }
-                                        ).cookie("__session", sessionCookie, options);
+                                        );
                                 },
                                 (error) => {
                                     throw new HttpException(`UNAUTHORIZED REQUEST!`, JSON.stringify(error), 401);
@@ -113,16 +115,16 @@ authRouter.post(
                                     createSession(sessionCookie, {});
                                     addToken(sessionCookie, SESSION_KEYS.UID, user!.uid);
                                     addToken(sessionCookie, SESSION_KEYS.ACCESS_TOKEN, token);
-                                    addToken(sessionCookie, SESSION_KEYS.REFRESH_TOKEN, user!["stsTokenManager"].refreshToken);
+                                    addToken(sessionCookie, SESSION_KEYS.REFRESH_TOKEN, user!.refreshToken);
 
-                                    res.status(200)
+                                    res.status(200).cookie("__session", sessionCookie, options)
                                         .json({
                                                 data:{
                                                     user,
                                                     token
                                                 }
                                             }
-                                        ).cookie("__session", sessionCookie, options);
+                                        );
                                 },
                                 (error) => {
                                     throw new HttpException(`UNAUTHORIZED REQUEST!`, JSON.stringify(error), 401);
