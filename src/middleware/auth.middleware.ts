@@ -17,15 +17,16 @@ export const authorizationHandler = (
     writeLog(`sessionToken : ${__session}`);
     writeLog(`csrfToken : ${csrfToken}`);
     if(!__session || !getSession(__session)) {
-        return response.status(302).redirect(`${process.env.SERVER_BASE_URL_CLIENT}/signin/`);
+        writeError(`Session token invalid or not provided.`);
+        return response.status(401).send(`Session token invalid or not provided.`);
     }
     if (token == null || !token.length || token != getToken(__session, SESSION_KEYS.ACCESS_TOKEN)) {
         writeError(`Authorization token invalid or not provided.`);
-        return response.sendStatus(401);
+        return response.status(401).send(`Authorization token invalid or not provided.`);
     }
     if(!csrfToken || csrfToken !== getSession(__session).csrfToken){
         writeError(`CSRF token invalid or not provided.`);
-        return response.status(403).send(`Invalid CSRF token error`);
+        return response.status(403).send(`CSRF token invalid or not provided.`);
     }
 
     admin.auth().verifySessionCookie(__session, true)
@@ -39,7 +40,7 @@ export const authorizationHandler = (
         })
         .catch((error) => {
             if(error === 'auth/id-token-revoked') {
-                return response.status(302).redirect(`${process.env.SERVER_BASE_URL_CLIENT}/signin/`);
+                return response.status(401).send(`Session token was revoked`);
             }
             writeError(`An error occurred while verifying the session cookie ${__session} : ${JSON.stringify(error)}`);
             return response.status(403).send(JSON.stringify(error));

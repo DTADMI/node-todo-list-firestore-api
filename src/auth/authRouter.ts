@@ -2,7 +2,7 @@
  * Required External Modules
  */
 
-import express, {Request, Response} from "express";
+import express, {CookieOptions, Request, Response} from "express";
 import {tryCatch} from "../utils/tryCatch";
 import HttpException from "../common/http-exception";
 import {logInWithEmailAndPassword, signUpWithEmailAndPassword} from "../common/firebase";
@@ -110,7 +110,17 @@ authRouter.post(
                             .then(
                                 (sessionCookie) => {
                                     // Set cookie policy for session cookie.
-                                    const options = { maxAge: sessionCookieOptions.expiresIn, httpOnly: true, secure: true };
+                                    /**
+                                     * maxAge?: number | undefined;
+                                     *     signed?: boolean | undefined;
+                                     *     expires?: Date | undefined;
+                                     *     httpOnly?: boolean | undefined;
+                                     *     path?: string | undefined;
+                                     *     domain?: string | undefined;
+                                     *     secure?: boolean | undefined;
+                                     *     encode?: ((val: string) => string) | undefined;
+                                     *     sameSite?: boolean | "lax" | "strict" | "none" | undefined;*/
+                                    const options = { maxAge: sessionCookieOptions.expiresIn, httpOnly: true, secure: true, sameSite: "none" } as CookieOptions;
 
                                     createSession(sessionCookie, {});
                                     addToken(sessionCookie, SESSION_KEYS.UID, user!.uid);
@@ -150,7 +160,9 @@ authRouter.post(
         writeLog(`session: ${JSON.stringify(getSession(__session))}`);
         clearSession(__session);
         admin.auth().revokeRefreshTokens(userId).then(()=>{
-            res.status(302).redirect(`${process.env.SERVER_BASE_URL_CLIENT}/signin/`);
+            const message = `Refresh tokens revoked for ${userId}. Successfully logged out.`;
+            writeLog(message);
+            res.status(200).send(message);
         }).catch((error) => {
             throw new HttpException(`Could not logout the user ${userId}`, JSON.stringify(error));
         });

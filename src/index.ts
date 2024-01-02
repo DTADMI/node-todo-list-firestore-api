@@ -15,7 +15,8 @@ import { errorHandler } from "./middleware/error.middleware.js";
 import * as functions from "firebase-functions";
 import {authRouter} from "./auth/authRouter";
 import {authorizationHandler} from "./middleware/auth.middleware";
-import {writeLog} from "./common/logger.service";
+//import {headersHandler} from "./middleware/headers.middleware";
+//import {writeLog} from "./common/logger.service";
 
 
 dotenv.config();
@@ -28,7 +29,7 @@ if (!process.env.SERVER_PORT) {
     process.exit(1);
 }
 
-const SERVER_PORT: number = process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT, 10) : 7777;
+/*const SERVER_PORT: number = process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT, 10) : 7777;*/
 
 const app = express();
 
@@ -41,14 +42,17 @@ const app = express();
  *  */
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: 25, // Limit each IP to 25 requests per `window` (here, per 15 minutes).
+    limit: 150, // Limit each IP to 150 requests per `window` (here, per 15 minutes).
     standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
     // store: ... , // Use an external store for consistency across multiple server instances.
 });
 
 const corsOptions = {
-    origin: [`${process.env.SERVER_BASE_URL_CLIENT}`],
+    //origin: [process.env.SERVER_BASE_URL_CLIENT, "https://darryltadmi-todo-list-angular.web.app/signin/", "https://darryltadmi-todo-list-angular.web.app/todolist/:1"],
+    //origin: ["https://darryltadmi-todo-list-angular.web.app", "https://node-todo-list-api.web.app"],
+    origin: process.env.SERVER_BASE_URL_CLIENT,
+    //origin: [`${process.env.SERVER_BASE_URL_CLIENT || "https://darryltadmi-todo-list-angular.web.app"}`],
     credentials: true
 }
 
@@ -60,8 +64,14 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use("/auth", authRouter);
 
+app.set('trust proxy', 2);
+app.get('/ip', (request, response) => response.send(request.ip));
+app.get('/x-forwarded-for', (request, response) => response.send(request.headers['x-forwarded-for']))
+
+//app.use(headersHandler);
+
+app.use("/auth", authRouter);
 app.use(authorizationHandler);
 app.use("/todolist/tasks", tasksRouter);
 
@@ -73,6 +83,6 @@ app.use(errorHandler);
 
 exports.api = functions.https.onRequest(app);
 
-app.listen(SERVER_PORT, () => {
+/*app.listen(SERVER_PORT, () => {
     writeLog(`Listening on port ${SERVER_PORT}`);
-});
+});*/
