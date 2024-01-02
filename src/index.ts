@@ -15,8 +15,7 @@ import { errorHandler } from "./middleware/error.middleware.js";
 import * as functions from "firebase-functions";
 import {authRouter} from "./auth/authRouter";
 import {authorizationHandler} from "./middleware/auth.middleware";
-//import {headersHandler} from "./middleware/headers.middleware";
-//import {writeLog} from "./common/logger.service";
+import {writeLog} from "./common/logger.service";
 
 
 dotenv.config();
@@ -29,7 +28,7 @@ if (!process.env.SERVER_PORT) {
     process.exit(1);
 }
 
-/*const SERVER_PORT: number = process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT, 10) : 7777;*/
+const SERVER_PORT: number = process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT, 10) : 7777;
 
 const app = express();
 
@@ -69,8 +68,6 @@ app.set('trust proxy', 2);
 app.get('/ip', (request, response) => response.send(request.ip));
 app.get('/x-forwarded-for', (request, response) => response.send(request.headers['x-forwarded-for']))
 
-//app.use(headersHandler);
-
 app.use("/auth", authRouter);
 app.use(authorizationHandler);
 app.use("/todolist/tasks", tasksRouter);
@@ -83,6 +80,6 @@ app.use(errorHandler);
 
 exports.api = functions.https.onRequest(app);
 
-/*app.listen(SERVER_PORT, () => {
+app.listen(SERVER_PORT, () => {
     writeLog(`Listening on port ${SERVER_PORT}`);
-});*/
+});

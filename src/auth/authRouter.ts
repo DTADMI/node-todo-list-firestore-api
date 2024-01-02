@@ -110,17 +110,7 @@ authRouter.post(
                             .then(
                                 (sessionCookie) => {
                                     // Set cookie policy for session cookie.
-                                    /**
-                                     * maxAge?: number | undefined;
-                                     *     signed?: boolean | undefined;
-                                     *     expires?: Date | undefined;
-                                     *     httpOnly?: boolean | undefined;
-                                     *     path?: string | undefined;
-                                     *     domain?: string | undefined;
-                                     *     secure?: boolean | undefined;
-                                     *     encode?: ((val: string) => string) | undefined;
-                                     *     sameSite?: boolean | "lax" | "strict" | "none" | undefined;*/
-                                    const options = { maxAge: sessionCookieOptions.expiresIn, httpOnly: true, secure: true, sameSite: "none" } as CookieOptions;
+                                    const options: CookieOptions = { maxAge: sessionCookieOptions.expiresIn, httpOnly: true, secure: true, sameSite: "none" };
 
                                     createSession(sessionCookie, {});
                                     addToken(sessionCookie, SESSION_KEYS.UID, user!.uid);
