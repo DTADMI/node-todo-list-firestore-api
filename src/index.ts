@@ -48,7 +48,7 @@ const limiter = rateLimit({
 });
 
 const corsOptions = {
-    origin: "https://darryltadmi-todo-list-angular.web.app/",
+    origin: [`${process.env.SERVER_BASE_URL_CLIENT}`],
     credentials: true
 }
 

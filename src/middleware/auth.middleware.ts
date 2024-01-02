@@ -17,7 +17,7 @@ export const authorizationHandler = (
     writeLog(`sessionToken : ${__session}`);
     writeLog(`csrfToken : ${csrfToken}`);
     if(!__session || !getSession(__session)) {
-        return response.status(302).redirect("https://darryltadmi-todo-list-angular.web.app/signin/");
+        return response.status(302).redirect(`${process.env.SERVER_BASE_URL_CLIENT}/signin/`);
     }
     if (token == null || !token.length || token != getToken(__session, SESSION_KEYS.ACCESS_TOKEN)) {
         writeError(`Authorization token invalid or not provided.`);
@@ -39,7 +39,7 @@ export const authorizationHandler = (
         })
         .catch((error) => {
             if(error === 'auth/id-token-revoked') {
-                return response.status(302).redirect("https://darryltadmi-todo-list-angular.web.app/signin/");
+                return response.status(302).redirect(`${process.env.SERVER_BASE_URL_CLIENT}/signin/`);
             }
             writeError(`An error occurred while verifying the session cookie ${__session} : ${JSON.stringify(error)}`);
             return response.status(403).send(JSON.stringify(error));

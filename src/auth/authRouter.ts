@@ -12,7 +12,7 @@ import SessionCookieOptions = auth.SessionCookieOptions;
 import {
     addToken,
     clearSession,
-    createSession,
+    createSession, getSession,
     getToken,
     SESSION_KEYS,
     sessionCookieOptions
@@ -144,10 +144,13 @@ authRouter.post(
     "/logout",
     tryCatch((req: Request, res: Response) => {
         const { __session } = req.cookies;
+        writeLog(`session token: ${__session}`);
         const userId = getToken(__session, SESSION_KEYS.UID);
+        writeLog(`userId: ${userId}`);
+        writeLog(`session: ${JSON.stringify(getSession(__session))}`);
         clearSession(__session);
         admin.auth().revokeRefreshTokens(userId).then(()=>{
-            res.status(302).redirect("https://darryltadmi-todo-list-angular.web.app/signin/");
+            res.status(302).redirect(`${process.env.SERVER_BASE_URL_CLIENT}/signin/`);
         }).catch((error) => {
             throw new HttpException(`Could not logout the user ${userId}`, JSON.stringify(error));
         });
