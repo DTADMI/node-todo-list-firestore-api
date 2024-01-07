@@ -4,7 +4,7 @@
  * Data Model Interfaces
  */
 
-import {BaseTask, Task} from "./task.interface.js";
+import { Task } from "./task.interface.js";
 import {db} from "../common/firebase.js";
 import {cache, CACHE_KEYS, clearAllCache} from "../common/cache.service";
 import {writeLog} from "../common/logger.service";
@@ -83,10 +83,10 @@ export const findByName = async (name: string): Promise<Task | null> => {
     })
 };
 
-export const create = async (newBaseTask: BaseTask): Promise<Task> => {
-    writeLog(`Creating task ${JSON.stringify(newBaseTask)}`);
+export const create = async (taskToCreate: Partial<Task>): Promise<Task> => {
+    writeLog(`Creating task ${JSON.stringify(taskToCreate)}`);
     const now = new Date().toUTCString();
-    const newTask = {...newBaseTask, creationDate: now, lastModificationDate: now}
+    const newTask = {...taskToCreate, creationDate: now, lastModificationDate: now}
     const docRef = await TaskCollection.add(newTask);
     writeLog(`Task Document written with ID: ${docRef.id}`);
     clearAllCache();
@@ -101,11 +101,11 @@ export const create = async (newBaseTask: BaseTask): Promise<Task> => {
 };
 
 export const update = async (
-    taskUpdate: Task
+    taskUpdate: Partial<Task>
 ): Promise<Task | null> => {
     writeLog(`Update started with : ${JSON.stringify(taskUpdate)}`);
     const dataUpdate = { ...taskUpdate, lastModificationDate: new Date().toUTCString()}
-    const docRef = TaskCollection.doc(dataUpdate.id);
+    const docRef = TaskCollection.doc(dataUpdate.id!);
     return docRef.set(dataUpdate, {merge: true})
         .then(async () => {
             writeLog("Task Document successfully updated!");
@@ -122,9 +122,9 @@ export const update = async (
 };
 
 export const updateSubtasks = async (
-    taskUpdate: Task
+    taskUpdate: Partial<Task>
 ): Promise<Task | null> => {
-    const docRef = TaskCollection.doc(taskUpdate.id);
+    const docRef = TaskCollection.doc(taskUpdate.id!);
     const dataUpdate = {
         subtasks: taskUpdate.subtasks ?? [] as string[],
         lastModificationDate: new Date().toUTCString()

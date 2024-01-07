@@ -41,17 +41,14 @@ const app = express();
  *  */
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: 150, // Limit each IP to 150 requests per `window` (here, per 15 minutes).
+    limit: 50, // Limit each IP to 50 requests per `window` (here, per 15 minutes).
     standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
     // store: ... , // Use an external store for consistency across multiple server instances.
 });
 
 const corsOptions = {
-    //origin: [process.env.SERVER_BASE_URL_CLIENT, "https://darryltadmi-todo-list-angular.web.app/signin/", "https://darryltadmi-todo-list-angular.web.app/todolist/:1"],
-    //origin: ["https://darryltadmi-todo-list-angular.web.app", "https://node-todo-list-api.web.app"],
     origin: process.env.SERVER_BASE_URL_CLIENT,
-    //origin: [`${process.env.SERVER_BASE_URL_CLIENT || "https://darryltadmi-todo-list-angular.web.app"}`],
     credentials: true
 }
 

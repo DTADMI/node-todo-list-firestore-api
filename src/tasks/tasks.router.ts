@@ -4,8 +4,7 @@
 
 import express, { Request, Response } from "express";
 import * as TaskService from "./tasks.service.js";
-import {BaseTask, Task} from "./task.interface.js";
-import {TaskResult} from "./tasks.interface.js";
+import { Task, TaskResult } from "./task.interface.js";
 import {tryCatch} from "../utils/tryCatch.js";
 import HttpException from "../common/http-exception.js";
 import {writeError, writeLog} from "../common/logger.service";
@@ -127,10 +126,10 @@ tasksRouter.get(
     "/",
     tryCatch((req: Request, res: Response) => {
         const { __session } = req.cookies;
-        const userId = getToken(__session, SESSION_KEYS.UID);
-        const page=req.query?.page ?? "";
-        const limit=req.query?.limit ?? "";
-        const showMedata= req.query?.showMedata ? ((req.query?.showMedata + "").toLowerCase?.() === 'true') : true;
+        const userId : string = getToken(__session, SESSION_KEYS.UID);
+        const page : string = req.query?.page as string ?? "";
+        const limit : string = req.query?.limit as string ?? "";
+        const showMedata : boolean = req.query?.showMedata ? ((req.query?.showMedata as string).toLowerCase?.() === 'true') : true;
         let results: TaskResult;
 
         if(!userId) {
@@ -172,13 +171,7 @@ tasksRouter.get(
         }
 
         TaskService.findById(id.toString()).then((task: Task | null) => {
-            if (!task) {
-                writeError(NOT_FOUND_MESSAGE);
-                throw new HttpException(NOT_FOUND_MESSAGE, null, 404);
-            }
-            writeLog(`Task Document data: ${task}`);
-            res.set('Cache-Control', 'public, max-age=60, s-maxage=120');
-            res.status(200).send(cleanTaskDto(task));
+            handleSingleTaskResult(task, res);
         }).catch((error) => {
             errorMessage = "Error getting document ";
             writeError(`errorMessage : ${errorMessage} ,\n error : ${error}`);
@@ -203,13 +196,7 @@ tasksRouter.get(
 
         name = name.toString();
         TaskService.findByName(name).then((task: Task | null) => {
-            if(!task) {
-                writeError(NOT_FOUND_MESSAGE);
-                throw new HttpException(NOT_FOUND_MESSAGE, null, 404);
-            }
-            writeLog(`Task Document data: ${JSON.stringify(task)}`);
-            res.set('Cache-Control', 'public, max-age=60, s-maxage=120');
-            res.status(200).send(cleanTaskDto(task));
+            handleSingleTaskResult(task, res);
         }).catch((error) => {
             errorMessage = "Error getting document ";
             writeError(`errorMessage: ${errorMessage}, \n error: ${error}`);
@@ -245,7 +232,7 @@ tasksRouter.get(
 tasksRouter.post(
     "/task",
     tryCatch((req: Request, res: Response) => {
-        const task: BaseTask = req.body;
+        const task: Partial<Task> = req.body;
 
         if(!task?.name) {
             writeError("task parameter must contain a name");
@@ -271,7 +258,7 @@ tasksRouter.post(
 tasksRouter.post(
     "/:id/subtask",
     tryCatch((req: Request, res: Response) => {
-        const task: BaseTask = req.body;
+        const task: Partial<Task> = req.body;
         const { id } = req.params;
         writeLog(`Creating subtask for task : ${id}`);
         if(!task?.name) {
@@ -301,7 +288,7 @@ tasksRouter.post(
                         TaskService.updateSubtasks(updateSupertask)
                             .then((updatedTask)=> {
                                 if(!updatedTask){
-                                    errorMessage = `Error adding subtask to document ${task}`;
+                                    errorMessage = `Error adding subtask to document ${JSON.stringify(task)}`;
                                     writeError(errorMessage);
                                     throw new HttpException(errorMessage);
                                 }
@@ -309,7 +296,7 @@ tasksRouter.post(
                             })
                     })
                     .catch((error) => {
-                        errorMessage = `Error adding subtask to document ${task}`;
+                        errorMessage = `Error adding subtask to document ${JSON.stringify(task)}`;
                         writeError(`errorMessage: ${errorMessage}, \n error ${error}`);
                         throw new HttpException(errorMessage, JSON.stringify(error));
                     });
@@ -322,7 +309,7 @@ tasksRouter.post(
 tasksRouter.put(
     "/",
     tryCatch((req: Request, res: Response) => {
-        const taskUpdate: Task = req.body;
+        const taskUpdate: Partial<Task> = req.body;
         writeLog(`In update! data sent : ${JSON.stringify(taskUpdate)}`);
         if(!taskUpdate?.name || !taskUpdate?.id) {
             errorMessage = "Missing data in request body!";
@@ -352,7 +339,7 @@ tasksRouter.put(
 tasksRouter.put(
     "/subtasks",
     tryCatch((req: Request, res: Response) => {
-        const taskUpdate: Task = req.body;
+        const taskUpdate: Partial<Task> = req.body;
         if(!taskUpdate?.name || !taskUpdate?.id || !taskUpdate?.subtasks) {
             errorMessage = "Missing data in request body!";
             writeLog(errorMessage);
@@ -406,7 +393,7 @@ tasksRouter.delete(
 tasksRouter.delete(
     "/",
     tryCatch((req: Request, res: Response) => {
-        let name = req.query?.name ?? "";
+        let name: string = req.query?.name as string ?? "";
         writeLog(`In delete by name with name : ${name}`);
         if (!name) {
             errorMessage = "Name not provided!";
@@ -468,4 +455,14 @@ const deleteTaskInCascade = (task: Task) => {
     deleteTaskFromSuperTask(task);
 
     deleteTask(task);
+}
+
+const handleSingleTaskResult = (task: Task | null, res: Response) => {
+    if (!task) {
+        writeError(NOT_FOUND_MESSAGE);
+        throw new HttpException(NOT_FOUND_MESSAGE, null, 404);
+    }
+    writeLog(`Task Document data: ${JSON.stringify(task)}`);
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=120');
+    res.status(200).send(cleanTaskDto(task));
 }

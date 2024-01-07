@@ -1,4 +1,5 @@
-export interface BaseTask {
+export interface Task {
+    id: string,
     name: string,
     description?: string,
     isDone: boolean,
@@ -7,10 +8,23 @@ export interface BaseTask {
     subtasks?: Array<string>,
     superTask?: string,
     lastModificationDate?: string,
-    userId: string
+    userId: string,
+    uri?: string
 }
 
-export interface Task extends BaseTask {
-    id: string,
-    uri?: string
+export interface TaskResult {
+    _metadata? : {
+        page: number,
+        per_page: number,
+        page_count: number,
+        total_count: number,
+        Links: (
+            {self: string}|
+            {first: string}|
+            {previous : string}|
+            {next: string}|
+            {last: string}
+            )[]
+    },
+    data: Task[],
 }
